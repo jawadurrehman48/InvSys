@@ -48,6 +48,8 @@ const Input = React.forwardRef(({ className = '', icon, ...props }, ref) => (
         <input ref={ref} className={`flex h-10 w-full rounded-lg border border-gray-300 bg-gray-50 py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-50 dark:focus:ring-indigo-500 dark:focus:border-indigo-500 ${icon ? 'pl-10' : ''} ${className}`} {...props} />
     </div>
 ));
+Input.displayName = 'Input';
+
 const Modal = ({ isOpen, onClose, title, children }) => {
   if (!isOpen) return null;
   return (
@@ -204,13 +206,16 @@ const HomePage = ({ products, suppliers, theme, currentUser }) => {
         const prompt = `Given the following low-stock electronics inventory items: ${lowStockNames}. Generate a prioritized restock suggestion list. For each item, provide a brief justification for its priority (e.g., 'High Priority - High demand item'). Format the response as a simple, clean list.`;
         
         try {
-            const apiKey = ""; // API key is handled by the environment
+            const apiKey = ""; // FIX: Removed process.env
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
             const response = await fetch(apiUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
             });
+            if (!response.ok) {
+                 throw new Error(`API call failed with status: ${response.status}`);
+            }
             const result = await response.json();
             if (result.candidates && result.candidates[0]?.content?.parts[0]?.text) {
                 setSuggestions(result.candidates[0].content.parts[0].text);
@@ -219,7 +224,7 @@ const HomePage = ({ products, suppliers, theme, currentUser }) => {
             }
         } catch (error) {
             console.error("Error fetching suggestions:", error);
-            setSuggestions('An error occurred while fetching suggestions.');
+            setSuggestions('An error occurred while fetching suggestions. Please ensure your API key is configured correctly.');
         } finally {
             setIsLoadingSuggestions(false);
         }
@@ -445,13 +450,16 @@ function ProductForm({ isOpen, onClose, onSave, product }) {
       setIsGenerating(true);
       const prompt = `Generate a concise, engaging, and SEO-friendly product description for an electronics product named '${formData.name}'. Include key potential specifications and target audience. Keep it under 60 words.`;
       try {
-          const apiKey = ""; // API key is handled by the environment
+          const apiKey = ""; // FIX: Removed process.env
           const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
           const response = await fetch(apiUrl, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
           });
+          if (!response.ok) {
+              throw new Error(`API call failed with status: ${response.status}`);
+          }
           const result = await response.json();
           if (result.candidates && result.candidates[0]?.content?.parts[0]?.text) {
               setFormData(prev => ({...prev, description: result.candidates[0].content.parts[0].text}));
@@ -468,10 +476,7 @@ function ProductForm({ isOpen, onClose, onSave, product }) {
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={product ? 'Edit Product' : 'Add New Product'}>
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div><label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Product Name</label><Input id="name" name="name" type="text" value={formData.name || ''} onChange={handleChange} required /></div>
-            <div><label htmlFor="sku" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">SKU</label><Input id="sku" name="sku" type="text" value={formData.sku || ''} onChange={handleChange} required /></div>
-        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4"><div><label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Product Name</label><Input id="name" name="name" type="text" value={formData.name || ''} onChange={handleChange} required /></div><div><label htmlFor="sku" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">SKU</label><Input id="sku" name="sku" type="text" value={formData.sku || ''} onChange={handleChange} required /></div></div>
         <div><label htmlFor="category" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Category</label><select id="category" name="category" value={formData.category || 'Laptops'} onChange={handleChange} className="flex h-10 w-full rounded-lg border border-gray-300 bg-gray-50 py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-50 dark:focus:ring-indigo-500"><option>Laptops</option><option>Mobiles</option><option>Accessories</option><option>Components</option></select></div>
         <div>
             <div className="flex justify-between items-center mb-1">
@@ -591,6 +596,7 @@ export default function App() {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [currentUser, setCurrentUser] = useState(null);
     const [users, setUsers] = useState(() => {
+        if (typeof window === 'undefined') return [{ id: 1, name: 'Admin User', email: 'admin@example.com', password: 'password', profileImage: null }];
         const savedUsers = localStorage.getItem('users');
         return savedUsers ? JSON.parse(savedUsers) : [{ id: 1, name: 'Admin User', email: 'admin@example.com', password: 'password', profileImage: null }];
     });
@@ -599,27 +605,35 @@ export default function App() {
     const [activePage, setActivePage] = useState('home');
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [theme, setTheme] = useState(() => {
-        if (typeof window !== 'undefined') { const savedTheme = localStorage.getItem('theme'); if (savedTheme) return savedTheme; return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'; }
-        return 'light';
+        if (typeof window === 'undefined') return 'light';
+        const savedTheme = localStorage.getItem('theme'); 
+        if (savedTheme) return savedTheme; 
+        return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
     });
 
     useEffect(() => {
-        localStorage.setItem('users', JSON.stringify(users));
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('users', JSON.stringify(users));
+        }
     }, [users]);
 
     useEffect(() => { 
-        const root = window.document.documentElement; 
-        if (theme === 'dark') root.classList.add('dark'); 
-        else root.classList.remove('dark'); 
-        localStorage.setItem('theme', theme); 
+        if (typeof window !== 'undefined') {
+            const root = window.document.documentElement; 
+            if (theme === 'dark') root.classList.add('dark'); 
+            else root.classList.remove('dark'); 
+            localStorage.setItem('theme', theme); 
+        }
     }, [theme]);
     
     useEffect(() => {
-        const loggedInUserId = localStorage.getItem('loggedInUserId');
-        if (loggedInUserId) {
-            const user = users.find(u => u.id === parseInt(loggedInUserId));
-            if (user) {
-                handleAuthSuccess(user);
+        if (typeof window !== 'undefined') {
+            const loggedInUserId = localStorage.getItem('loggedInUserId');
+            if (loggedInUserId) {
+                const user = users.find(u => u.id === parseInt(loggedInUserId));
+                if (user) {
+                    handleAuthSuccess(user);
+                }
             }
         }
     }, [users]);
@@ -628,12 +642,16 @@ export default function App() {
     const handleAuthSuccess = (user) => { 
         setCurrentUser(user); 
         setIsAuthenticated(true);
-        localStorage.setItem('loggedInUserId', user.id);
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('loggedInUserId', user.id);
+        }
     };
     const handleLogout = () => { 
         setIsAuthenticated(false); 
         setCurrentUser(null); 
-        localStorage.removeItem('loggedInUserId');
+        if (typeof window !== 'undefined') {
+            localStorage.removeItem('loggedInUserId');
+        }
     };
     const addUser = (user) => setUsers(prev => [...prev, user]);
     const updateUser = (updatedUser) => { 

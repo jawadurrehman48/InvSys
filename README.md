@@ -1,12 +1,12 @@
 # InvSys - AI-Powered Inventory Management System
 
 <p align="center">
-  <img src="https://placehold.co/600x300/1e1b4b/ffffff?text=InvSys+Dashboard" alt="InvSys Dashboard Screenshot">
+  <img src="image.png" alt="InvSys Dashboard Screenshot">
 </p>
 
 <p align="center">
   <a href="https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fjawadurrehman48%2FInvSys" target="_blank">
-    <img src="https://vercel.com/button" alt="Deploy with Vercel"/>
+    
   </a>
   <br>
   <img src="https://img.shields.io/badge/Next.js-14.x-black?style=for-the-badge&logo=next.js" alt="Next.js">
