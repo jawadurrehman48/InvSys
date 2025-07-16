@@ -21,7 +21,6 @@
 
 This project was built from the ground up, starting with a simple concept and evolving into a feature-rich platform with authentication, multi-page navigation, data visualization, and AI integration.
 
-**[➡️ View Live Demo](https://YOUR_VERCEL_DEPLOYMENT_LINK_HERE.vercel.app/)** _(Replace with your Vercel link)_
 
 ---
 
@@ -119,10 +118,6 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 
 This application is optimized for deployment on [Vercel](https://vercel.com/).
 
-1.  Push your code to a GitHub repository.
-2.  Import the repository into Vercel.
-3.  Add the `NEXT_PUBLIC_GEMINI_API_KEY` environment variable in the Vercel project settings.
-4.  Click **Deploy**. Vercel will handle the rest!
 
 ---
 
